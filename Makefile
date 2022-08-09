@@ -5,7 +5,7 @@ ifeq ($(ARCH),)
 ARCH=$(shell go env GOARCH)
 endif
 
-ORG ?= rancher
+ORG ?= niusmallnan
 PKG ?= github.com/kubernetes/kubernetes
 SRC ?= github.com/kubernetes/kubernetes
 TAG ?= ${DRONE_TAG}
@@ -14,7 +14,7 @@ K3S_ROOT_VERSION ?= v0.10.1
 BUILD_META := -build$(shell date +%Y%m%d)
 
 ifeq ($(TAG),)
-TAG := v1.22.5-rke2dev$(BUILD_META)
+TAG := v1.22.5-rfodev$(BUILD_META)
 endif
 
 GOLANG_VERSION := $(shell ./scripts/golang-version.sh $(TAG))
@@ -31,7 +31,7 @@ image-build:
 		--build-arg PKG=$(PKG) \
 		--build-arg SRC=$(SRC) \
 		--build-arg TAG=$(TAG) \
-		--build-arg GO_IMAGE=rancher/hardened-build-base:$(GOLANG_VERSION) \
+		--build-arg GO_IMAGE=niusmallnan/hardened-build-base:$(GOLANG_VERSION) \
 		--build-arg K3S_ROOT_VERSION=$(K3S_ROOT_VERSION) \
 		--tag $(ORG)/hardened-kubernetes:$(TAG)-linux-$(ARCH) \
 		.

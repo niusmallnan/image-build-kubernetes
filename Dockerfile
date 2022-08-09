@@ -1,7 +1,6 @@
-ARG UBI_IMAGE=registry.access.redhat.com/ubi7/ubi-minimal:latest
-ARG GO_IMAGE=rancher/hardened-build-base:UNSET_GO_IMAGE_ARG
+ARG EULER_IMAGE=openeuler/openeuler:22.03-lts
+ARG GO_IMAGE=niusmallnan/hardened-build-base:UNSET_GO_IMAGE_ARG
 
-FROM ${UBI_IMAGE} as ubi
 FROM ${GO_IMAGE} as build
 RUN set -x \
     && apk --no-cache add \
@@ -67,21 +66,18 @@ RUN go-build-static-k8s.sh -o bin/kube-apiserver           ./cmd/kube-apiserver
 RUN go-build-static-k8s.sh -o bin/kube-controller-manager  ./cmd/kube-controller-manager
 RUN go-build-static-k8s.sh -o bin/kube-scheduler           ./cmd/kube-scheduler
 RUN go-build-static-k8s.sh -o bin/kube-proxy               ./cmd/kube-proxy
-RUN go-build-static-k8s.sh -o bin/kubeadm                  ./cmd/kubeadm
-RUN go-build-static-k8s.sh -o bin/kubectl                  ./cmd/kubectl
 RUN go-build-static-k8s.sh -o bin/kubelet                  ./cmd/kubelet
+RUN CGO_ENABLED=0 go-build-static-k8s.sh -o bin/kubeadm                  ./cmd/kubeadm
+RUN CGO_ENABLED=0 go-build-static-k8s.sh -o bin/kubectl                  ./cmd/kubectl
 RUN go-assert-static.sh bin/*
-RUN if [ "${ARCH}" != "s390x" ]; then \
-      go-assert-boring.sh bin/* ; \
-    fi
 RUN install -s bin/* /usr/local/bin/
 RUN kube-proxy --version
 
-FROM ubi AS kubernetes
-RUN microdnf update -y           && \
-    microdnf install which          \
-    conntrack-tools              && \
-    rm -rf /var/cache/yum
+FROM ${EULER_IMAGE} AS kubernetes
+RUN dnf update -y           && \
+    dnf install -y conntrack-tools --setopt=install_weak_deps=False  && \
+    dnf clean all && \
+    rm -rf /var/cache/* /var/log/*
 
 COPY --from=build-k8s /opt/k3s-root/aux/ /usr/sbin/
 COPY --from=build-k8s /opt/k3s-root/bin/ /bin/
